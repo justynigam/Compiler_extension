@@ -1,0 +1,79 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ml_platform
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    ports:
+      - "8000:8000"
+    environment:
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ml_platform
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ../backend:/app
+      - model_cache:/app/model_cache
+      - uploads:/app/uploads
+
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.backend
+    command: rq worker ml_tasks --url redis://redis:6379/0
+    environment:
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ml_platform
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      PYTHONPATH: /app
+    depends_on:
+      - postgres
+      - redis
+    volumes:
+      - ../backend:/app
+      - model_cache:/app/model_cache
+      - uploads:/app/uploads
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    volumes:
+      - ../frontend:/app
+      - /app/node_modules
+
+volumes:
+  pgdata:
+  model_cache:
+  uploads:

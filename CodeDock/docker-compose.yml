@@ -1,0 +1,75 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: codedock-postgres
+    environment:
+      POSTGRES_DB: codedock
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: ../docker/Dockerfile.backend
+    container_name: codedock-backend
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/codedock
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+      java-image:
+        condition: service_completed_successfully
+      python-image:
+        condition: service_completed_successfully
+      c-image:
+        condition: service_completed_successfully
+      cpp-image:
+        condition: service_completed_successfully
+      js-image:
+        condition: service_completed_successfully
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  java-image:
+    build: ./docker/java
+    image: codedock-java:latest
+    command: ["echo", "Java image built"]
+
+  python-image:
+    build: ./docker/python
+    image: codedock-python:latest
+    command: ["echo", "Python image built"]
+
+  c-image:
+    build: ./docker/c
+    image: codedock-c:latest
+    command: ["echo", "C image built"]
+
+  cpp-image:
+    build: ./docker/cpp
+    image: codedock-cpp:latest
+    command: ["echo", "C++ image built"]
+
+  js-image:
+    build: ./docker/javascript
+    image: codedock-js:latest
+    command: ["echo", "JavaScript image built"]
+
+volumes:
+  pgdata:

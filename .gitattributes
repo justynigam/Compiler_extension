@@ -1,0 +1,27 @@
+# Normalize line endings on commit; check out LF everywhere.
+* text=auto eol=lf
+
+# Shell scripts and Maven wrapper must stay LF even on Windows.
+*.sh text eol=lf
+mvnw text eol=lf
+gradlew text eol=lf
+
+# Windows-only scripts stay CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary assets — never normalize or diff as text.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.jar binary
+*.woff binary
+*.woff2 binary
+*.csv -text
+
+# Lockfiles: collapse diff noise in review.
+package-lock.json linguist-generated=true -diff
